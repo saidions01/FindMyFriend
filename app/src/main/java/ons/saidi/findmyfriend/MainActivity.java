@@ -1,6 +1,8 @@
 package ons.saidi.findmyfriend;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,24 +47,48 @@ private ActivityMainBinding binding;
                         Manifest.permission.RECEIVE_SMS,
                         Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.POST_NOTIFICATIONS
+                        Manifest.permission.POST_NOTIFICATIONS,
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
                 },
                 1
         );
     }
 
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "FindMyFreinds_ChannelID",
+                    "FindMyFreinds Location Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notifications for location sharing");
+            channel.enableLights(true);
+            channel.enableVibration(true);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults, int deviceId) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId);
-        if(requestCode==1){
-            if(grantResults.length>0){
-                if(grantResults[0]== PackageManager.PERMISSION_DENIED
-                        || grantResults[3]==PackageManager.PERMISSION_DENIED
-                ){
+
+        if(requestCode == 1){
+            if(grantResults.length > 0){
+                if(grantResults[0] == PackageManager.PERMISSION_DENIED ||
+                        grantResults[3] == PackageManager.PERMISSION_DENIED ) {
+
+                    // If any permission is denied, close the app
                     finish();
                 }
+            } else {
+
+                // Permissions denied
+                finish();
             }
-            else finish();
         }
     }
     }

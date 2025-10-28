@@ -21,7 +21,7 @@
         android:textSize="35sp" />
 
     <EditText
-        android:id="@+id/edphonenumber"
+        android:id="@+id/edtPhone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
@@ -30,10 +30,10 @@
         android:hint="Enter the phone number"
         android:inputType="phone"
         android:minHeight="48dp"
-        android:text="5554" />
+        android:text="5556" />
 
     <Button
-        android:id="@+id/btnsendsms"
+        android:id="@+id/btnRequest"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"

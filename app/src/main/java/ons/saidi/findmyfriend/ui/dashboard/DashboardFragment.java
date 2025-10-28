@@ -22,16 +22,20 @@ private FragmentDashboardBinding binding;
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        binding.btnsendsms.setOnClickListener(new View.OnClickListener() {
+        binding.btnRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //send sms
-                String number=binding.edphonenumber.getText().toString();
 
-                SmsManager manager= SmsManager.getDefault();//sim par defaut
-                manager.sendTextMessage(number, null, "FindMyFriends: Envoyer moi votre position", null, null);
+                String number = binding.edtPhone.getText().toString();
+
+                SmsManager manager = SmsManager.getDefault();
+                manager.sendTextMessage(number,null,
+                        "FindMyFriends: Envoyer moi votre position",
+                        null,
+                        null);
             }
         });
+
 
         return root;
     }

@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
@@ -18,67 +20,117 @@ import androidx.core.app.NotificationManagerCompat;
 
 public class MySMSReceiver extends BroadcastReceiver {
 
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    @RequiresApi(api = Build.VERSION_CODES.O)
+    private static final String CHANNEL_ID = "FindMyFreinds_ChannelID";
+    private static final String CHANNEL_NAME = "FindMyFreinds Location Notifications";
+    private static final int NOTIFICATION_ID = 1001;
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        // TODO: This method is called when the BroadcastReceiver is receiving
-        // an Intent broadcast.
-        String messageBody,phoneNumber;
-        if(intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED"))
-        {
-            Bundle bundle =intent.getExtras();
+        String messageBody, phoneNumber;
+
+        if (intent != null && intent.getAction() != null &&
+                intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
+
+            Bundle bundle = intent.getExtras();
             if (bundle != null) {
                 Object[] pdus = (Object[]) bundle.get("pdus");
-                final SmsMessage[] messages = new SmsMessage[pdus.length];
-                for (int i = 0; i < pdus.length; i++) {
-                    messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
-                }
-                if (messages.length > -1) {
-                    messageBody = messages[0].getMessageBody();
-                    phoneNumber = messages[0].getDisplayOriginatingAddress();
+                String format = bundle.getString("format");
 
-                    if(messageBody.contains("FindMyFriends: Envoyer moi votre position")){
-                        Intent i =new Intent(context, MyGpsLocationService.class);
-                        i.putExtra("sender", phoneNumber);
-                        context.startService(i);
+                if (pdus != null && pdus.length > 0) {
+                    final SmsMessage[] messages = new SmsMessage[pdus.length];
+                    for (int i = 0; i < pdus.length; i++) {
+                        messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i], format);
                     }
 
-                    if(messageBody.startsWith("FindMyFriends: ma position est")){
-                        String []t=messageBody.split("#");
-                        String longitude=t[1];
-                        String latitude=t[2];
+                    if (messages[0] != null) {
+                        messageBody = messages[0].getMessageBody();
+                        phoneNumber = messages[0].getDisplayOriginatingAddress();
 
-                        //notification
+                        Toast.makeText(context,
+                                        "Message : " + messageBody + " Reçu de la part de: " + phoneNumber,
+                                        Toast.LENGTH_LONG)
+                                .show();
 
+                        if(messageBody.startsWith("FindMyFriends: Envoyer moi votre position")) {
+                            Intent i = new Intent(context, MyGpsLocationService.class);
+                            i.putExtra("sender", phoneNumber);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                context.startForegroundService(i);
+                            } else {
+                                context.startService(i);
+                            }
 
-                        NotificationCompat.Builder mynotif = new NotificationCompat.Builder(context, "FindMyFriends_ChannelID");
-                        mynotif.setContentTitle("Position recue");
-                        mynotif.setContentText("Appuyer pour la position sur map");
-                        mynotif.setSmallIcon(android.R.drawable.ic_dialog_map);
-                        mynotif.setAutoCancel(true);
+                        }
 
-                        Intent i=new Intent(context, MapsActivity.class);
-                        i.putExtra("longitude", longitude);
-                        i.putExtra("latitude", latitude);
-                        PendingIntent pi = PendingIntent.getActivity(
-                                context,0,i,
-                                PendingIntent.FLAG_UPDATE_CURRENT
-                        );
-                        mynotif.setContentIntent(pi);
+                        if(messageBody.startsWith("FindMyFriends: Ma position est")){
+                            String[] parts = messageBody.split("#");
+                            String longitude = "";
+                            String latitude = "";
 
-                        //lancer la notif
-                        NotificationManagerCompat managerCompat=NotificationManagerCompat.from(context);
-                        NotificationChannel canal = new NotificationChannel("FindMyFriends_ChannelID",
-                                "canal pr notre app findfriends",
-                                NotificationManager.IMPORTANCE_DEFAULT);
-                        managerCompat.createNotificationChannel(canal);
+                            if(parts.length >= 3) {
+                                latitude = parts[1];
+                                longitude = parts[2];
 
-                        managerCompat.notify(0, mynotif.build());
+                                Log.d("MySMSReceiver", "Received location - Lat: " + latitude + ", Long: " + longitude);
+                                showLocationNotification(context, latitude, longitude);
+                            }
+                        }
                     }
                 }
             }
         }
+    }
 
+    private void showLocationNotification(Context context, String latitude, String longitude) {
+        createNotificationChannel(context);
+
+        Intent mapIntent = new Intent(context, MapsActivity.class);
+        mapIntent.putExtra("latitude", latitude);
+        mapIntent.putExtra("longitude", longitude);
+        mapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                mapIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Position Reçue")
+                .setContentText("Appuyez pour voir la position sur la carte")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setDefaults(NotificationCompat.DEFAULT_ALL);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+
+        try {
+            notificationManager.notify(NOTIFICATION_ID, builder.build());
+            Log.d("MySMSReceiver", "Notification sent successfully");
+        } catch (SecurityException e) {
+            Log.e("MySMSReceiver", "Notification permission denied", e);
+            Toast.makeText(context, "Notification permission required", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void createNotificationChannel(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notifications for location sharing");
+            channel.enableLights(true);
+            channel.enableVibration(true);
+
+            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
     }
 }
