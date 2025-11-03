@@ -1,4 +1,4 @@
-package com.example.tpservicejson;
+package ons.saidi.findmyfriend;
 
 import android.util.Log;
 import org.json.JSONException;

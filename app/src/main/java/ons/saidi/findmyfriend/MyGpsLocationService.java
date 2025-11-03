@@ -2,6 +2,7 @@ package ons.saidi.findmyfriend;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.location.Location;
@@ -20,129 +21,100 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 public class MyGpsLocationService extends Service {
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    private FusedLocationProviderClient mClient;
+    private LocationCallback locationCallback;
 
-    private static final String TAG = "MyGpsLocationService";
-
-    public MyGpsLocationService() {
-    }
-    @SuppressLint("ForegroundServiceType")
     @Override
     public void onCreate() {
         super.onCreate();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification notification = new NotificationCompat.Builder(this, "FindMyFreinds_ChannelID")
-                    .setContentTitle("Getting location")
-                    .setContentText("Please wait…")
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
-                    .build();
-            startForeground(1, notification);
-        }
+        mClient = LocationServices.getFusedLocationProviderClient(this);
     }
-
 
     @SuppressLint("MissingPermission")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String phoneNumber = intent.getStringExtra("sender");
-        Log.d(TAG, "Location request received from: " + phoneNumber);
+        String number = intent.getStringExtra("sender");
+        // start as foreground so Android won't kill the service immediately
+        startAsForeground();
 
-        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            Log.e(TAG, "No phone number provided");
-            stopSelf();
-            return START_NOT_STICKY;
-        }
+        // Try last location first
+        mClient.getLastLocation().addOnSuccessListener(location -> {
+            if (location != null) {
+                sendLocationSMS(number, location);
+                stopSelf();
+            } else {
+                // request a fresh high-accuracy single update
+                LocationRequest request = LocationRequest.create();
+                request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                request.setInterval(1000);
+                request.setNumUpdates(1);
 
-        FusedLocationProviderClient locationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        locationClient.getLastLocation()
-                .addOnSuccessListener(new OnSuccessListener<Location>() {
+                locationCallback = new LocationCallback() {
                     @Override
-                    public void onSuccess(Location location) {
-                        if (location != null) {
-                            double latitude = location.getLatitude();
-                            double longitude = location.getLongitude();
-
-                            Log.d(TAG, "Location found - Lat: " + latitude + ", Long: " + longitude);
-                            sendLocationSMS(phoneNumber, latitude, longitude);
-                        } else {
-                            Log.w(TAG, "Last known location is null, requesting current location");
-                            requestCurrentLocation(locationClient, phoneNumber);
+                    public void onLocationResult(LocationResult result) {
+                        if (result != null && result.getLastLocation() != null) {
+                            Location loc = result.getLastLocation();
+                            sendLocationSMS(number, loc);
+                        }
+                        // remove updates and stop the service
+                        if (mClient != null && locationCallback != null) {
+                            mClient.removeLocationUpdates(locationCallback);
                         }
                         stopSelf();
                     }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Failed to get last location", e);
-                        requestCurrentLocation(locationClient, phoneNumber);
-                    }
-                });
+                };
+
+                mClient.requestLocationUpdates(request, locationCallback, getMainLooper());
+            }
+        }).addOnFailureListener(e -> {
+            // if failed, stop service gracefully
+            stopSelf();
+        });
 
         return START_NOT_STICKY;
     }
 
-    @SuppressLint("MissingPermission")
-    private void requestCurrentLocation(FusedLocationProviderClient locationClient, String phoneNumber) {
-        LocationRequest locationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(1000)
-                .setFastestInterval(500)
-                .setNumUpdates(1);
+    private void startAsForeground() {
+        // create a minimal persistent notification
+        Intent notifIntent = new Intent(this, MainActivity.class);
+        PendingIntent pIntent = PendingIntent.getActivity(
+                this,
+                0,
+                notifIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_IMMUTABLE : 0)
+        );
 
-        LocationCallback locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult != null && !locationResult.getLocations().isEmpty()) {
-                    Location location = locationResult.getLastLocation();
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
+        Notification notification = new NotificationCompat.Builder(this, "FindMyFriends_ChannelID")
+                .setContentTitle("FindMyFriends")
+                .setContentText("Obtaining GPS location...")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .setContentIntent(pIntent)
+                .setOngoing(true)
+                .build();
 
-                    Log.d(TAG, "Current location found - Lat: " + latitude + ", Long: " + longitude);
-                    sendLocationSMS(phoneNumber, latitude, longitude);
-                } else {
-                    Log.e(TAG, "Unable to get current location");
-                    sendErrorSMS(phoneNumber);
-                }
-                stopSelf();
-            }
-        };
-
-        locationClient.requestLocationUpdates(locationRequest, locationCallback, getMainLooper());
+        startForeground(2, notification);
     }
 
-    private void sendLocationSMS(String phoneNumber, double latitude, double longitude) {
-        try {
-            String message = "FindMyFreinds: Ma position est#" + latitude + "#" + longitude;
+    private void sendLocationSMS(String number, Location location) {
+        double longitude = location.getLongitude();
+        double latitude = location.getLatitude();
 
-            SmsManager smsManager = SmsManager.getDefault();
-            smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-
-            Log.d(TAG, "Location SMS sent successfully to: " + phoneNumber);
-            Toast.makeText(this, "Location sent to " + phoneNumber, Toast.LENGTH_SHORT).show();
-
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to send SMS", e);
-            Toast.makeText(this, "Failed to send location SMS", Toast.LENGTH_SHORT).show();
-        }
+        SmsManager manager = SmsManager.getDefault();
+        String body = "FindMyFriends: ma position est#" + longitude + "#" + latitude;
+        manager.sendTextMessage(number, null, body, null, null);
     }
 
-    private void sendErrorSMS(String phoneNumber) {
-        try {
-            String message = "FindMyFreinds: Unable to get current location. Please try again later.";
-
-            SmsManager smsManager = SmsManager.getDefault();
-            smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-
-            Log.d(TAG, "Error SMS sent to: " + phoneNumber);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to send error SMS", e);
+    @Override
+    public void onDestroy() {
+        if (mClient != null && locationCallback != null) {
+            mClient.removeLocationUpdates(locationCallback);
         }
+        super.onDestroy();
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }

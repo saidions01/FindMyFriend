@@ -1,25 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@id/navigation_home">
 
+    <!-- 🏠 Home Fragment -->
     <fragment
         android:id="@+id/navigation_home"
         android:name="ons.saidi.findmyfriend.ui.home.HomeFragment"
         android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home">
 
+        <!-- Example of navigation action (optional)
+        <action
+            android:id="@+id/action_home_to_dashboard"
+            app:destination="@id/navigation_dashboard" />
+        -->
+    </fragment>
+
+    <!-- 📍 Dashboard Fragment -->
     <fragment
         android:id="@+id/navigation_dashboard"
         android:name="ons.saidi.findmyfriend.ui.dashboard.DashboardFragment"
         android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        tools:layout="@layout/fragment_dashboard">
 
+        <!-- Example of navigation action (optional)
+        <action
+            android:id="@+id/action_dashboard_to_notifications"
+            app:destination="@id/navigation_notifications" />
+        -->
+    </fragment>
+
+    <!-- 🔔 Notifications Fragment -->
     <fragment
         android:id="@+id/navigation_notifications"
         android:name="ons.saidi.findmyfriend.ui.notifications.NotificationsFragment"
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_notifications" />
+
 </navigation>

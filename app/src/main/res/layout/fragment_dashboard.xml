@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".ui.dashboard.DashboardFragment">
+    tools:context=".ui.dashboard.DashboardFragment"
+    android:background="@drawable/bg_gradient" >
 
     <TextView
         android:id="@+id/text_dashboard"
@@ -18,6 +19,7 @@
         android:paddingBottom="20dp"
         android:text="Request Location"
         android:textAlignment="center"
+        android:textColor="#FF8F8F"
         android:textSize="35sp" />
 
     <EditText
@@ -30,7 +32,7 @@
         android:hint="Enter the phone number"
         android:inputType="phone"
         android:minHeight="48dp"
-        android:text="5556" />
+        android:text="5554" />
 
     <Button
         android:id="@+id/btnRequest"
@@ -38,6 +40,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
+        android:backgroundTint="#FF8F8F"
         android:text="SEND REQUEST" />
 
 </LinearLayout>

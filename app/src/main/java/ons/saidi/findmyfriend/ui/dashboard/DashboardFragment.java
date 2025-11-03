@@ -15,9 +15,10 @@ public class DashboardFragment extends Fragment {
 
 private FragmentDashboardBinding binding;
 
+
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-
 
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -25,22 +26,21 @@ private FragmentDashboardBinding binding;
         binding.btnRequest.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                String number = binding.edtPhone.getText().toString();
+                String number = binding.edtPhone.getText().toString().trim();
+                if (number.isEmpty()) return;
 
                 SmsManager manager = SmsManager.getDefault();
-                manager.sendTextMessage(number,null,
+                manager.sendTextMessage(number, null,
                         "FindMyFriends: Envoyer moi votre position",
                         null,
                         null);
             }
         });
 
-
         return root;
     }
 
-@Override
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
