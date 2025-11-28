@@ -7,14 +7,14 @@
     <!-- 🏠 Home Section -->
     <item
         android:id="@+id/navigation_home"
-        android:icon="@drawable/ic_home_black_24dp"
+        android:icon="@drawable/ic_my_location"
         android:title="@string/title_home"
         android:contentDescription="@string/title_home" />
 
     <!-- 📊 Dashboard Section -->
     <item
         android:id="@+id/navigation_dashboard"
-        android:icon="@drawable/ic_dashboard_black_24dp"
+        android:icon="@drawable/send_message"
         android:title="@string/title_dashboard"
         android:contentDescription="@string/title_dashboard" />
 
@@ -24,5 +24,19 @@
         android:icon="@drawable/ic_notifications_black_24dp"
         android:title="@string/title_notifications"
         android:contentDescription="@string/title_notifications" />
+
+    <!-- 📞 Contacts Section -->
+    <item
+        android:id="@+id/navigation_contacts"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Contacts"
+        android:contentDescription="Contacts" />
+
+    <!-- 📱 Dialer Section -->
+    <item
+        android:id="@+id/navigation_dialer"
+        android:icon="@android:drawable/ic_menu_call"
+        android:title="Dialer"
+        android:contentDescription="Dialer" />
 
 </menu>

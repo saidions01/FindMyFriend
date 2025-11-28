@@ -41,4 +41,18 @@
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_notifications" />
 
+    <!-- 📞 Contacts Fragment -->
+    <fragment
+        android:id="@+id/navigation_contacts"
+        android:name="ons.saidi.findmyfriend.ui.contacts.ContactsFragment"
+        android:label="Contacts"
+        tools:layout="@layout/fragment_contacts" />
+
+    <!-- 📱 Dialer Fragment -->
+    <fragment
+        android:id="@+id/navigation_dialer"
+        android:name="ons.saidi.findmyfriend.ui.dialer.DialerFragment"
+        android:label="Dialer"
+        tools:layout="@layout/fragment_dialer" />
+
 </navigation>

@@ -11,6 +11,8 @@ import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,42 +23,56 @@ import java.util.ArrayList;
 import ons.saidi.findmyfriend.JSONParser;
 import ons.saidi.findmyfriend.Config;
 import ons.saidi.findmyfriend.Position;
+import ons.saidi.findmyfriend.R;
 import ons.saidi.findmyfriend.databinding.FragmentHomeBinding;
+import ons.saidi.findmyfriend.PositionAdapter;
+
 
 public class HomeFragment extends Fragment {
 
-    ArrayList <Position> data = new ArrayList<Position>();
-private FragmentHomeBinding binding;
+    ArrayList<Position> data = new ArrayList<Position>();
+    private FragmentHomeBinding binding;
+    private PositionAdapter adapter;
+    private RecyclerView recyclerViewPositions;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
-            ViewGroup container, Bundle savedInstanceState) {
-    binding = FragmentHomeBinding.inflate(inflater, container, false);
-    View root = binding.getRoot();
-    binding.btnDownload.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            Download d = new Download();
-            d.execute();
-        }
-    });
+                             ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentHomeBinding.inflate(inflater, container, false);
+        View root = binding.getRoot();
 
+        // Use findViewById instead of data binding
+        recyclerViewPositions = root.findViewById(R.id.recyclerViewPositions);
+
+        // Setup RecyclerView
+        recyclerViewPositions.setLayoutManager(new LinearLayoutManager(getContext()));
+        adapter = new PositionAdapter(data);
+        recyclerViewPositions.setAdapter(adapter);
+
+        binding.btnDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Download d = new Download();
+                d.execute();
+            }
+        });
 
         return root;
     }
 
-  class Download extends AsyncTask {
+    class Download extends AsyncTask<Void, Void, Void> {
         AlertDialog alert;
-      @Override
-      protected Object doInBackground(Object[] objects) { //second thread
-          JSONParser parser = new JSONParser();
-          JSONObject response = parser.makeHttpRequest(Config.url_get_position, "GET", null);
-          Log.e("response" , response.toString());
 
-          try {
-              int success = response.getInt("success");
-              if(success==1){
-                  data.clear();
-                  JSONArray tableau = response.getJSONArray("positions");
+        @Override
+        protected Void doInBackground(Void... voids) { //second thread
+            JSONParser parser = new JSONParser();
+            JSONObject response = parser.makeHttpRequest(Config.url_get_position, "GET", null);
+            Log.e("response", response.toString());
+
+            try {
+                int success = response.getInt("success");
+                if (success == 1) {
+                    data.clear();
+                    JSONArray tableau = response.getJSONArray("positions");
                     for (int i = 0; i < tableau.length(); i++) {
                         JSONObject ligne = tableau.getJSONObject(i);
                         int idposition = ligne.getInt("idposition");
@@ -65,35 +81,31 @@ private FragmentHomeBinding binding;
                         String longitude = ligne.getString("longitude");
                         String latitude = ligne.getString("latitude");
                         data.add(new Position(idposition, pseudo, numero, longitude, latitude));
-
-                                            
-                    
                     }
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        }
 
-              }
-          } catch (JSONException e) {
-              throw new RuntimeException(e);
-          }
-          return null;
-      }
-      @Override
-      protected void onPreExecute() {
-          AlertDialog.Builder dialog = new AlertDialog.Builder(HomeFragment.this.getActivity());
-          dialog.setTitle("Downloading");
-          dialog.setMessage("Please wait...");
-          alert = dialog.create();
-          alert.show();
-      }
+        @Override
+        protected void onPreExecute() {
+            AlertDialog.Builder dialog = new AlertDialog.Builder(HomeFragment.this.getActivity());
+            dialog.setTitle("Downloading");
+            dialog.setMessage("Please wait...");
+            alert = dialog.create();
+            alert.show();
+        }
 
-      @Override
-      protected void onPostExecute(Object o) {
-          ArrayAdapter ad = new ArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, data);
-          binding.listPositions.setAdapter(ad);
-          alert.dismiss();
-      }
-  }
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            adapter.notifyDataSetChanged();
+            alert.dismiss();
+        }
+    }
 
-@Override
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;

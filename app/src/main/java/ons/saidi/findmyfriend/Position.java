@@ -7,6 +7,22 @@ public class Position {
     String longitude ;
     String latitude ;
 
+    public String getPseudo() {
+        return pseudo;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
     public Position(int idposition, String pseudo, String numero, String longitude, String latitude) {
         this.idposition = idposition;
         this.pseudo = pseudo;

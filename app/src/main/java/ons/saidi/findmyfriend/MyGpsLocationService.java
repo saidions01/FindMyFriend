@@ -3,22 +3,20 @@ package ons.saidi.findmyfriend;
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
 import android.telephony.SmsManager;
-import android.util.Log;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 import com.google.android.gms.location.*;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
+
 
 public class MyGpsLocationService extends Service {
     private FusedLocationProviderClient mClient;
@@ -76,6 +74,18 @@ public class MyGpsLocationService extends Service {
 
     private void startAsForeground() {
         // create a minimal persistent notification
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (nm != null) {
+                NotificationChannel chan = new NotificationChannel(
+                        "FindMyFriends_ChannelID",
+                        "FindMyFriends Notifications",
+                        NotificationManager.IMPORTANCE_LOW
+                );
+                nm.createNotificationChannel(chan);
+            }
+        }
+
         Intent notifIntent = new Intent(this, MainActivity.class);
         PendingIntent pIntent = PendingIntent.getActivity(
                 this,
@@ -100,7 +110,8 @@ public class MyGpsLocationService extends Service {
         double latitude = location.getLatitude();
 
         SmsManager manager = SmsManager.getDefault();
-        String body = "FindMyFriends: ma position est#" + longitude + "#" + latitude;
+        // Human-readable format; receiver also supports legacy '#' format
+        String body = "FindMyFriends: ma position est longitude: " + longitude + ", latitude: " + latitude;
         manager.sendTextMessage(number, null, body, null, null);
     }
 
