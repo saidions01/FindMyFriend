@@ -1,6 +1,8 @@
 package ons.saidi.findmyfriend;
 
 
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,15 +36,20 @@ public class PositionAdapter extends RecyclerView.Adapter<PositionAdapter.Positi
         holder.tvPhone.setText(currentPosition.getNumero());
         holder.tvCoordinates.setText(currentPosition.getLatitude() + ", " + currentPosition.getLongitude());
 
-        // You can calculate distance here later
         holder.tvDistance.setText("Nearby");
         holder.tvTime.setText("Active now");
 
         holder.btnNavigate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Handle navigation button click
-                // You can implement map navigation here
+                String latitude = currentPosition.getLatitude();
+                String longitude = currentPosition.getLongitude();
+                Uri gmmIntentUri = Uri.parse("geo:" + latitude + "," + longitude + "?q=" + latitude + "," + longitude + "(" + currentPosition.getPseudo() + ")");
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                if (mapIntent.resolveActivity(v.getContext().getPackageManager()) != null) {
+                    v.getContext().startActivity(mapIntent);
+                }
             }
         });
     }

@@ -1,7 +1,7 @@
 package ons.saidi.findmyfriend;
 
 public class Config {
-    public static String IP_Server ="172.20.10.4";
+    public static String IP_Server ="10.0.2.2";
 
     /**
      * ipv4  lan
